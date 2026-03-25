@@ -1,62 +1,50 @@
-import os
 import streamlit as st
 from dotenv import load_dotenv
-
-# LangChain components
 from langchain_community.document_loaders import TextLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 
-# NEW: Import Google Gemini components instead of OpenAI
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-
-# 1. Load environment variables (gets the GOOGLE_API_KEY from the .env file)
+# Load environment variables
 load_dotenv()
 
-# Set up the Streamlit UI
-st.title("🤖 Orapex Intern: My First Gemini RAG App")
-st.write("Ask a question based on the custom document!")
+# Page setup
+st.set_page_config(page_title="Orapex RAG App", page_icon="🤖")
+st.title("🤖 Orapex Intern: My First RAG App")
+st.write("Ask me anything about Orapex!")
 
-@st.cache_resource 
+@st.cache_resource
 def setup_rag_pipeline():
-    # --- A. LOAD ---
+    # A. LOAD
     loader = TextLoader("sample.txt")
     documents = loader.load()
 
-    # --- B. CHUNK ---
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    # B. CHUNK
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=50
+    )
     chunks = text_splitter.split_documents(documents)
 
-    # --- C. EMBED & STORE ---
-    # NEW: Use Google's embedding model 
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+    # C. EMBED & STORE
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
     vectorstore = Chroma.from_documents(chunks, embeddings)
 
-    # --- D. RETRIEVE & GENERATE ---
-    # NEW: Use Gemini 1.5 Flash (fast, smart, and cost-effective)
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
-    
-    # Create the RAG Chain
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff", 
-        retriever=vectorstore.as_retriever()
-    )
-    return qa_chain
+    # D. RETRIEVER + CHAIN
+    retriever = vectorstore.as_retriever()
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
 
-# Ensure the file exists before running
-if os.path.exists("sample.txt"):
-    qa_chain = setup_rag_pipeline()
+    return chain
 
-    user_query = st.text_input("Enter your question:")
+# Setup pipeline
+qa_chain = setup_rag_pipeline()
 
-    if user_query:
-        with st.spinner("Searching database and generating answer with Gemini..."):
-            response = qa_chain.invoke({"query": user_query})
-            
-            st.success("Done!")
-            st.write("### Answer:")
-            st.write(response["result"])
-else:
-    st.error("⚠️ Please create a 'sample.txt' file in the same directory as this script.")
+# Chat input
+question = st.text_input("Ask a question:")
+
+if question:
+    with st.spinner("Thinking..."):
+        response = qa_chain.invoke({"query": question})
+        st.success(response["result"])
