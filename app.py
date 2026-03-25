@@ -30,7 +30,7 @@ def setup_rag_pipeline():
 
     # --- C. EMBED & STORE ---
     # NEW: Use Google's embedding model 
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
     vectorstore = Chroma.from_documents(chunks, embeddings)
 
     # --- D. RETRIEVE & GENERATE ---
