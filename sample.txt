@@ -1,0 +1,4 @@
+Orapex is an innovative tech company specializing in Artificial Intelligence training and integration. 
+The company was founded to bridge the gap between academic AI research and practical industry applications.
+The head trainer for the 2026 internship program is Dr. muhanad amarneh
+The first task for interns is to build a RAG system using LangChain, ChromaDB, and Streamlit.
